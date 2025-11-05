@@ -1,6 +1,6 @@
 package org.example;
 
-public class lesson_2 {
+public class Lesson2 {
     public static void main(String[] args) {
         Product product1 = new Product(
                 "banana",
