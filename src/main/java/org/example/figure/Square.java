@@ -1,4 +1,4 @@
-package org.example;
+package org.example.figure;
 
 public class Square implements Figure {
     private double side;

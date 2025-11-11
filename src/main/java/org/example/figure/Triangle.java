@@ -1,4 +1,4 @@
-package org.example;
+package org.example.figure;
 
 public class Triangle implements Figure {
     private double side1, side2, side3;

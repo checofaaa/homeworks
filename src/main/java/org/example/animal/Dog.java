@@ -1,4 +1,4 @@
-package org.example;
+package org.example.animal;
 
 public class Dog extends Animal {
     private static int countDog;

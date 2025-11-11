@@ -1,4 +1,4 @@
-package org.example;
+package org.example.figure;
 
 public class FigureApp {
     public static void main(String[] args) {

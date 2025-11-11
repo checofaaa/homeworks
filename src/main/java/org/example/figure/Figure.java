@@ -1,4 +1,4 @@
-package org.example;
+package org.example.figure;
 
 public interface Figure {
     String getFigureName();
