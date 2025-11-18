@@ -24,7 +24,7 @@ public class ArithmeticCalculatorTest {
     @Test
     void testDiv() {
         ArithmeticCalculator calc = new ArithmeticCalculator();
-        Assertions.assertEquals(0.5, calc.add(-4, -8));
+        Assertions.assertEquals(0.5, calc.div(-4, -8));
     }
 
     @Test
