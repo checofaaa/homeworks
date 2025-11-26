@@ -1,92 +1,100 @@
 import io.github.bonigarcia.wdm.WebDriverManager;
-import org.openqa.selenium.chrome.ChromeDriver;
 import org.junit.jupiter.api.*;
-import org.openqa.selenium.*;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.Wait;
-import org.openqa.selenium.support.ui.WebDriverWait;
-
-import java.time.Duration;
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.chrome.ChromeDriver;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 public class MTSOnlinePaymentTest {
-    WebDriver driver;
+    private WebDriver driver;
+    private MTSOnlinePaymentSection paymentSection;
 
     @BeforeEach
-    public void setup() {
+    void setup() {
         WebDriverManager.chromedriver().setup();
         driver = new ChromeDriver();
         driver.manage().window().maximize();
-        driver.get("https://www.mts.by/");
+
+        paymentSection = new MTSOnlinePaymentSection(driver);
+        paymentSection.open();
+
+        driver.findElement(By.className("cookie__ok")).click();
     }
 
     @AfterEach
-    public void teardown() {
+    void teardown() {
         if (driver != null) {
             driver.quit();
         }
     }
 
-    @Test
-    public void testBlockTitle() {
-        WebElement blockTitle = driver.findElement(
-                By.xpath("//h2[contains(text(),'Онлайн пополнение')]")
-        );
 
-        assertTrue(blockTitle.isDisplayed());
-        assertEquals("Онлайн пополнение\n" +
-                "без комиссии", blockTitle.getText());
+    @Test
+    void testBlockTitle() {
+        assertEquals("Онлайн пополнение\nбез комиссии", paymentSection.getBlockTitleText());
     }
 
-
     @Test
-    public void testPaymentLogos() {
-        WebElement visa = driver.findElement(By.xpath("//div[contains(@class, 'pay__partners')]//img[contains(@src,'visa')]"));
-        WebElement verifiedByVisa = driver.findElement(By.xpath("//div[contains(@class, 'pay__partners')]//img[contains(@src,'visa-verified')]"));
-        WebElement mastercard = driver.findElement(By.xpath("//div[contains(@class, 'pay__partners')]//img[contains(@src,'mastercard')]"));
-        WebElement mastercardSC = driver.findElement(By.xpath("//div[contains(@class, 'pay__partners')]//img[contains(@src,'mastercard-secure')]"));
-        WebElement belkart = driver.findElement(By.xpath("//div[contains(@class, 'pay__partners')]//img[contains(@src,'belkart')]"));
-
-        assertTrue(visa.isDisplayed());
-        assertTrue(verifiedByVisa.isDisplayed());
-        assertTrue(mastercard.isDisplayed());
-        assertTrue(mastercardSC.isDisplayed());
-        assertTrue(belkart.isDisplayed());
+    void testPaymentLogos() {
+        assertTrue(paymentSection.arePaymentLogosDisplayed());
     }
 
-
     @Test
-    public void testMoreInfoLink() {
-        driver.findElement(By.className("cookie__ok")).click();
+    void testMoreInfoLink() {
+        paymentSection.clickMoreInfo();
 
-        WebElement moreInfoLink = driver.findElement(By.linkText("Подробнее о сервисе"));
-
-        moreInfoLink.click();
+        assertNotNull(driver.getCurrentUrl());
         assertTrue(driver.getCurrentUrl().contains("poryadok-oplaty-i-bezopasnost-internet-platezhey"));
     }
 
+
+
     @Test
-    public void testFormContinue() {
-        Wait<WebDriver> wait = new WebDriverWait(driver, Duration.ofSeconds(6));
+    void testPlaceholdersForAllPaymentTypes() {
+        assertEquals("Номер телефона", paymentSection.getServicesPhonePlaceholder());
+        assertEquals("Сумма", paymentSection.getServicesAmountPlaceholder());
+        assertEquals("E-mail для отправки чека", paymentSection.getServicesEmailPlaceholder());
 
-        driver.findElement(By.className("cookie__ok")).click();
+        assertEquals("Номер абонента", paymentSection.getInternetPhonePlaceholder());
+        assertEquals("Сумма", paymentSection.getInternetAmountPlaceholder());
+        assertEquals("E-mail для отправки чека", paymentSection.getInternetEmailPlaceholder());
 
-        WebElement phoneField = driver.findElement(By.id("connection-phone"));
-        WebElement amountField = driver.findElement(By.id("connection-sum"));
-        WebElement nextButton = driver.findElement(By.xpath("//form[contains(@class, 'pay-form opened')]//button[contains(@class, 'button button__default')]"));
+        assertEquals("Номер счета на 44", paymentSection.getInstallmentPhonePlaceholder());
+        assertEquals("Сумма", paymentSection.getInstallmentAmountPlaceholder());
+        assertEquals("E-mail для отправки чека", paymentSection.getInstallmentEmailPlaceholder());
 
-        phoneField.click();
-        phoneField.sendKeys("297777777");
+        assertEquals("Номер счета на 2073", paymentSection.getDebtPhonePlaceholder());
+        assertEquals("Сумма", paymentSection.getDebtAmountPlaceholder());
+        assertEquals("E-mail для отправки чека", paymentSection.getDebtEmailPlaceholder());
+    }
 
-        amountField.click();
-        amountField.sendKeys("15");
+    @Test
+    void testServicesPaymentModal() {
+        String phone = "297777777";
+        String amount = "15";
+        String email = "test@test.com";
 
-        nextButton.click();
+        paymentSection.fillServicesForm(phone, amount, email);
+        paymentSection.clickContinue();
 
-        wait.until(ExpectedConditions.frameToBeAvailableAndSwitchToIt(By.className("bepaid-iframe")));
-        WebElement modalContent = wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//div[contains(@class, 'payment-page__container')]")));
+        MTSPaymentModal modalPage = new MTSPaymentModal(driver);
+        modalPage.switchToPaymentFrame();
 
-        assertTrue(modalContent.isDisplayed());
+        String phoneText = modalPage.getPhoneTextLocator();
+        assertTrue(phoneText.contains("297777777"));
+
+        String amountText = modalPage.getAmountTextLocator();
+        assertTrue(amountText.contains("15"));
+
+        String payButtonText = modalPage.getPayButtonText();
+        assertTrue(payButtonText.contains("15"));
+
+        assertTrue(modalPage.getCardNumberPlaceholder().toLowerCase().contains("номер карты"));
+        assertTrue(modalPage.getExpiryPlaceholder().toLowerCase().contains("срок действия"));
+        assertTrue(modalPage.getCvcPlaceholder().toLowerCase().contains("cvc"));
+        assertTrue(modalPage.getHolderNamePlaceholder().toLowerCase().contains("имя и фамилия на карте"));
+
+        assertTrue(modalPage.arePaymentLogosVisible());
     }
 }
